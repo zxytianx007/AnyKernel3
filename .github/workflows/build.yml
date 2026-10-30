@@ -1554,10 +1554,6 @@ jobs:
             sed -i '/kmi_symbol_list_strict_mode/d' ./common/BUILD.bazel
             rm -rf ./common/android/abi_gki_protected_exports_*
             sed -i "/stable_scmversion_cmd/s/-maybe-dirty//g" ./build/kernel/kleaf/impl/stamp.bzl
-            sed -i "/^CONFIG_RFKILL is not set/d" ./common/arch/arm64/configs/gki_defconfig
-            grep -q "^CONFIG_RFKILL=y" ./common/arch/arm64/configs/gki_defconfig || echo "CONFIG_RFKILL=y" >> ./common/arch/arm64/configs/gki_defconfig
-            sed -i '\|^[[:space:]]*"net/rfkill/rfkill\.ko",$|d' ./common/modules.bzl
-            echo "已从 modules.bzl 移除 rfkill.ko 条目"
           fi
 
           VERSION_INPUT=$(echo "${{ inputs.version }}" | tr -d '[:space:]')
