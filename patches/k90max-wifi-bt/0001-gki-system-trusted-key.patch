@@ -1,0 +1,28 @@
+--- a/common/BUILD.bazel
++++ b/common/BUILD.bazel
+@@ -275,6 +275,7 @@
+     makefile = ":Makefile",
+     module_implicit_outs = get_gki_modules_list("arm64") + get_kunit_modules_list("arm64"),
+     protected_module_names_list = ":gki_aarch64_protected_module_names",
++    system_trusted_key = "//common:certs/stock_signing_key.pem",
+     system_dlkm_extra_archive_files = [":generate_gki_module_info_arm64"],
+     trim_nonlisted_kmi = True,
+     visibility = ["//visibility:public"],
+--- a/build/kernel/kleaf/common_kernels.bzl
++++ b/build/kernel/kleaf/common_kernels.bzl
+@@ -73,6 +73,7 @@
+         kmi_symbol_list_add_only = None,
+         module_implicit_outs = None,
+         protected_module_names_list = None,
++        system_trusted_key = None,
+         gki_system_dlkm_modules = None,
+         make_goals = None,
+         abi_definition_stg = None,
+@@ -258,6 +259,7 @@
+         kmi_symbol_list_strict_mode = kmi_symbol_list_strict_mode,
+         module_implicit_outs = module_implicit_outs,
+         protected_module_names_list = protected_module_names_list,
++        system_trusted_key = system_trusted_key,
+         make_goals = make_goals,
+         page_size = page_size,
+         deprecation = deprecation,

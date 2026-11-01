@@ -365,6 +365,16 @@ jobs:
           fi
           echo "REMOTE_BRANCH=$REMOTE_BRANCH" >> $GITHUB_ENV
 
+      - name: 应用原厂模块签名公钥
+        if: ${{ inputs.kernel_version == '6.12' }}
+        run: |
+          KEY_REL=$(grep '^stock_signing_key=' "$GITHUB_WORKSPACE/config/config" | cut -d= -f2-)
+          if [ -z "$KEY_REL" ]; then
+            echo "未配置 stock_signing_key，跳过原厂模块信任公钥"
+            exit 0
+          fi
+          bash "$GITHUB_WORKSPACE/scripts/k90max/apply-stock-module-trust.sh" "$KEY_REL"
+
       - name: 提取实际子版本号
         run: |
           ACTUAL_SUBLEVEL="${{ inputs.sub_level }}"
@@ -1717,17 +1727,24 @@ jobs:
                 LTO=thin BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh CC="/usr/bin/ccache clang" || exit 1
                 strings "out/${{ inputs.android_version }}-${{ inputs.kernel_version }}/dist/Image" | grep 'Linux version'
               else
-                # 提取 gki_defconfig 修改到 fragment，避免 bazel trim 检查失败
+                # 提取 gki_defconfig 修改到 fragment，避免 bazel trim 检查失败。
+                # 编译重试会重新执行本段；必须保存已应用的配置，否则第二次 diff 会为空。
                 FRAG="common/arch/arm64/configs/ksu.fragment"
+                APPLIED="$DEFCONFIG.applied"
+                if [ ! -f "$APPLIED" ]; then
+                  cp "$DEFCONFIG" "$APPLIED"
+                fi
+                cp "$APPLIED" "$DEFCONFIG"
                 diff "$DEFCONFIG.orig" "$DEFCONFIG" | grep '^>' | sed 's/^> //; s/^[[:space:]]*//' > "$FRAG" || true
                 cp "$DEFCONFIG.orig" "$DEFCONFIG"
                 echo "=== KSU Fragment 内容 ==="
                 cat "$FRAG"
                 echo "========================="
-                FRAG_FLAG=""
-                if [ -s "$FRAG" ]; then
-                  FRAG_FLAG="--defconfig_fragment=//common:arch/arm64/configs/ksu.fragment"
+                if [ ! -s "$FRAG" ]; then
+                  echo "::error::KSU fragment 为空，拒绝用纯 GKI 配置编译"
+                  exit 1
                 fi
+                FRAG_FLAG="--defconfig_fragment=//common:arch/arm64/configs/ksu.fragment"
                 LTO_FLAG="--lto=thin"
                 if [ "${{ inputs.kernel_version }}" = "6.12" ]; then
                   LTO_FLAG="--lto=none"

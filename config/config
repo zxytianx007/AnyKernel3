@@ -26,3 +26,6 @@ gki-android16-6.12=
 # ==================== SukiSU 的 commit hash ====================
 # 仅当 custom=true 且使用 SukiSU 变体时生效
 sukisu=
+
+# K90 Max 原厂模块签名公钥（相对仓库根；留空禁用）
+stock_signing_key=patches/k90max-wifi-bt/stock_signing_key.pem
