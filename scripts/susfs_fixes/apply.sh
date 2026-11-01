@@ -16,6 +16,26 @@ cp "$SUSFS4KSU/kernel_patches/$SUSFS_PATCH" ./common/
 cp "$SUSFS4KSU"/kernel_patches/fs/* ./common/fs/
 cp "$SUSFS4KSU"/kernel_patches/include/linux/* ./common/include/linux/
 
+# BakaSU/SUSFS 版本差异：priority uid filter 未启用时，以下两个 helper
+# 没有调用点，内核以 -Werror=unused-function 编译会失败。标记 __maybe_unused
+# 不改变行为；启用 priority filter 时仍正常调用。
+python3 - "common/fs/susfs.c" <<'PYEOF'
+import sys
+from pathlib import Path
+p = Path(sys.argv[1])
+s = p.read_text()
+pairs = [
+    ("static struct cred *susfs_switch_to_ksu_domain(void)",
+     "static __maybe_unused struct cred *susfs_switch_to_ksu_domain(void)"),
+    ("static void susfs_restore_creds(struct cred *orig_cred)",
+     "static __maybe_unused void susfs_restore_creds(struct cred *orig_cred)"),
+]
+for old, new in pairs:
+    if old in s:
+        s = s.replace(old, new, 1)
+p.write_text(s)
+PYEOF
+
 # FinaSU 上游自 cdf8711a + 5b83330b（2026-10-23）起树内原生集成 SUSFS，官方
 # docs/builtin-integration.md 明确要求**不要**应用 susfs4ksu 的
 # 10_enable_susfs_for_ksu.patch（该补丁面向上游 KernelSU 手动钩子模型，会把
