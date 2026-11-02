@@ -504,6 +504,14 @@ jobs:
             "SukiSU")
               echo "添加 ${{ inputs.ksu_variant }}..."
               curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
+              # 安全启动对照：SukiSU 的 ADBROOT 与 mount_hide 是 BakaSU 没有的
+              # 启动期初始化项，先关闭以验证是否为无法开机的原因。
+              MAINSRC="KernelSU/kernel/ksu_main.c"
+              if [ -f "$MAINSRC" ]; then
+                sed -i 's|^[[:space:]]*ksu_adb_root_init();|    /* ksu_adb_root_init(); safe boot */|' "$MAINSRC"
+                sed -i 's|^[[:space:]]*ksu_mount_hide_init();|    /* ksu_mount_hide_init(); safe boot */|' "$MAINSRC"
+                grep -n 'safe boot' "$MAINSRC" || true
+              fi
               # 内核侧 KSU 版本来源对齐官方最新上传 Manager 构建：
               # SukiSU 版本号 = 40000 + REPO_BRANCH 指向分支的提交数 - 2815
               #（main 分支定义在 kernel/Kbuild，builtin 分支定义在 kernel/Makefile，
