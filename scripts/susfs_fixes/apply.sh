@@ -106,28 +106,6 @@ case "$KSU_VARIANT" in
     ;;
 esac
 
-# SUSFS v1.5.x 在 fs/susfs.c/头文件中用 CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER
-# 包住新接口，但部分 KernelSU 内置 SUSFS 的 Kconfig 尚未同步该符号。
-# 这里幂等补齐，避免 fragment 中的 =y 被 olddefconfig 丢弃。
-ensure_susfs_priority_uid_filter_kconfig() {
-  local KCONFIG="$KERNEL_ROOT/KernelSU/kernel/Kconfig"
-  [[ -f "$KCONFIG" ]] || return 0
-  if grep -q '^config KSU_SUSFS_PRIORITY_UID_FILTER$' "$KCONFIG"; then
-    return 0
-  fi
-  cat >> "$KCONFIG" <<'EOF'
-
-config KSU_SUSFS_PRIORITY_UID_FILTER
-	bool "Enable to allow adding user-defined uids hidden from priority syscalls"
-	depends on KSU_SUSFS
-	default y
-	help
-	  Allow hiding user-defined uids from getpriority/setpriority/ioprio_get/ioprio_set.
-	  Effective on all processes with uid >= 10000.
-EOF
-}
-ensure_susfs_priority_uid_filter_kconfig
-
 cd "$KERNEL_ROOT/common"
 CURRENT_SUB="$SUB_LEVEL"
 if [[ ! "$CURRENT_SUB" =~ ^[0-9]+$ ]]; then

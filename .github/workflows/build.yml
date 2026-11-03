@@ -504,23 +504,6 @@ jobs:
             "SukiSU")
               echo "添加 ${{ inputs.ksu_variant }}..."
               curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
-              # 安全启动对照：SukiSU 的 ADBROOT 与 mount_hide 是 BakaSU 没有的
-              # 启动期初始化项，先关闭以验证是否为无法开机的原因。
-              MAINSRC="KernelSU/kernel/ksu_main.c"
-              if [ -f "$MAINSRC" ]; then
-                sed -i 's|^[[:space:]]*ksu_adb_root_init();|    /* ksu_adb_root_init(); safe boot */|' "$MAINSRC"
-                sed -i 's|^[[:space:]]*ksu_mount_hide_init();|    /* ksu_mount_hide_init(); safe boot */|' "$MAINSRC"
-                grep -n 'safe boot' "$MAINSRC" || true
-              fi
-              # 上游 #1035：builtin 的 mount_hide 会让 app 打开 /proc/mounts 失败，
-              # libincfs PLOG(FATAL)，SystemUI/launcher 崩溃循环。仅注释 init 不够，
-              # 必须移除 LSM hook 注册（兼容 464f9201 的 file_open 与 1cfa5734 的 file_permission）。
-              LSMSRC="KernelSU/kernel/hook/lsm_hook.c"
-              if [ -f "$LSMSRC" ]; then
-                sed -i 's|^[[:space:]]*LSM_HOOK_INIT(file_open, ksu_mount_hide_file_open),|    /* LSM_HOOK_INIT(file_open, ksu_mount_hide_file_open), safe boot */|' "$LSMSRC"
-                sed -i 's|^[[:space:]]*LSM_HOOK_INIT(file_permission, ksu_mount_hide_file_permission),|    /* LSM_HOOK_INIT(file_permission, ksu_mount_hide_file_permission), safe boot */|' "$LSMSRC"
-                grep -n 'safe boot' "$LSMSRC" || true
-              fi
               # 内核侧 KSU 版本来源对齐官方最新上传 Manager 构建：
               # SukiSU 版本号 = 40000 + REPO_BRANCH 指向分支的提交数 - 2815
               #（main 分支定义在 kernel/Kbuild，builtin 分支定义在 kernel/Makefile，
@@ -1605,7 +1588,6 @@ jobs:
           CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
           CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
           CONFIG_KSU_SUSFS_SUS_MAP=y
-          CONFIG_KSU_SUSFS_PRIORITY_UID_FILTER=y
           EOF
 
       - name: 配置内核名称
